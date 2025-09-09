@@ -2,6 +2,7 @@ import telebot
 import time
 import random_generator
 from telebot import types
+from telebot.types import BotCommand
 from datetime import datetime, timezone, timedelta
 import sqlite3
 import logging
@@ -45,6 +46,10 @@ time_of_start = datetime.now().strftime('%Y-%m-%d_%H-%M-%S') # Дата теку
 path_to_log = f"Logs/log_{time_of_start}.txt" # Путь к файлу лога
 os.makedirs(os.path.abspath("Logs"), exist_ok=True)
 
+commands = [
+    BotCommand("start", "Запустить бота"),
+    BotCommand("menu", "Открыть меню")
+]
 
 logger = logging.getLogger("MSCodes")
 logger.setLevel(logging.DEBUG)
@@ -90,6 +95,7 @@ def initial_setup():
     default_config["email"]["login"] = input("Введи почту аккаунта, с которого будем получать коды >>> ")
     default_config["email"]["pass"] = input("Введи пароль приложения для почтового аккаунта >>> ")
     default_config["email"]["imap"] = input("Введи адрес IMAP-сервера для этого адреса почты. Его можно найти в интернете >>> ")
+    default_config["admin_pass"]= input("Введи пароль администратора для Telegram-бота >>> ")
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(default_config, f, ensure_ascii=False, indent=2)
 # Загружаем конфиг
@@ -147,6 +153,7 @@ if not TOKEN:
     raise ValueError("Токен не найден в конфиге")
 bot = telebot.TeleBot(TOKEN) # Подключение к боту
 bot.set_my_description("Привет! Этот бот поможет получить код для входа в аккаунт Microsoft! Отправь /start, а затем отправь уникальный код, который был выдан тебе\n\nРазработчик: xromza\nGitHub: https://github.com/xromza")
+bot.set_my_commands(commands)
 logger.info("Бот подключен")
 
 def add_attemps():
@@ -230,6 +237,11 @@ def is_valid_email(email):
     # Регулярное выражение для проверки email
     pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     return re.match(pattern, email) is not None
+
+@bot.message_handler(commands=["menu"], content_types=['text'])
+@anti_spam
+def menu_handler(message):
+    bot.send_message(message.from_user.id, "Функционал пока что не реализован", reply_to_message_id=message.id)
 
 @bot.message_handler(commands=["logs"], content_types=["text"])
 @anti_spam
@@ -356,6 +368,17 @@ def handle_generator(message):
         return
     with open(generate_codes(int(splitted_message[1])), "rb") as f:
         bot.send_document(message_id, f) 
+
+@bot.message_handler(commands=['admin'])
+@anti_spam
+def handle_admin(message):
+    splitted_msg = message.text.split(" ")
+    if len(splitted_msg) == 2 and splitted_msg[1] == config['admin_pass']:
+        make_user_admin(message.from_user.id)
+        bot.send_message(message.chat.id, "Вы стали администратором")
+    else:
+        bot.send_message(message.chat.id, "Код не найден")
+
 @bot.message_handler(func=lambda message: user_states.get(message.from_user.id) is not None)
 @anti_spam
 def process_reply(message):
