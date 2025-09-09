@@ -95,9 +95,11 @@ def initial_setup():
 # Загружаем конфиг
 try:
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        config = json.load(f)
+        config = default_config
 except FileNotFoundError:
     initial_setup()
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        config = json.load(f)
 except json.JSONDecodeError:
     print("Ошибка: Некорректный JSON в конфиге. Начинаю настройку.")
     initial_setup()
