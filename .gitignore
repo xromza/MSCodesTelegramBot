@@ -1,0 +1,11 @@
+Generator/*.txt
+Config/config.json
+Logs/*.txt
+venv
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+last_code.txt
