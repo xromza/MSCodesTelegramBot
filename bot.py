@@ -48,7 +48,8 @@ os.makedirs(os.path.abspath("Logs"), exist_ok=True)
 
 commands = [
     BotCommand("start", "Запустить бота"),
-    BotCommand("menu", "Открыть меню")
+    BotCommand("menu", "Открыть меню"),
+    BotCommand("reset_states", "Сбросить состояния")
 ]
 
 logger = logging.getLogger("MSCodes")
@@ -241,8 +242,42 @@ def is_valid_email(email):
 @bot.message_handler(commands=["menu"], content_types=['text'])
 @anti_spam
 def menu_handler(message):
-    bot.send_message(message.from_user.id, "Функционал пока что не реализован", reply_to_message_id=message.id)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
+    keyboard.add(types.KeyboardButton("🔑 Получить код для входа"))
+    if admin_user(message.from_user.id):
+        keyboard.add(types.KeyboardButton("🔄️ Изменить конфиг"))
+        keyboard.add(types.KeyboardButton("👁️ Просмотреть базу данных"))
+        keyboard.add(types.KeyboardButton("📁 Выгрузить логи"))
+    keyboard.add(types.KeyboardButton("🛟 Инструкции"))
+    #bot.send_message(message.from_user.id, "Функционал пока что не реализован", reply_to_message_id=message.id)
 
+@bot.message_handler(func=lambda message: message.text == "🔑 Получить код для входа")
+@anti_spam
+def code_key(message):
+    bot.send_message(message.from_user.id, text="Отправьте _уникальный код_ прямо в чат, и бот ответит вам кодом с почты!", parse_mode='MarkdownV2')
+
+@bot.message_handler(func=lambda message: message.text == "🔄️ Изменить конфиг")
+@anti_spam
+def config_key(message):
+    config_handler(message)
+
+@bot.message_handler(func=lambda message: message.text == "👁️ Просмотреть базу данных")
+@anti_spam
+def db_key(message):
+    db_inspect_handler(message)
+
+@bot.message_handler(func=lambda message: message.text == "📁 Выгрузить логи")
+@anti_spam
+def logs_key(message):
+    logs_handler(message)
+
+@bot.message_handler(func=lambda message: message.text == "📁 Выгрузить логи")
+@anti_spam
+def instructions_key(message):
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton("Для ПК", callback_data='instructions@pc'))
+    keyboard.add(types.InlineKeyboardButton("Для консоли", callback_data='instructions@console'))
+    bot.send_message(message.from_user.id, "Выберите вашу платформу:", reply_markup=keyboard)
 @bot.message_handler(commands=["logs"], content_types=["text"])
 @anti_spam
 def logs_handler(message):
@@ -373,9 +408,11 @@ def handle_generator(message):
 @anti_spam
 def handle_admin(message):
     splitted_msg = message.text.split(" ")
-    if len(splitted_msg) == 2 and splitted_msg[1] == config['admin_pass']:
+    if admin_user(message.from_user.id):
+        bot.send_message(message.chat.id, "Вы уже администратор", reply_to_message_id=message.id)
+    elif len(splitted_msg) == 2 and splitted_msg[1] == config['admin_pass']:
         make_user_admin(message.from_user.id)
-        bot.send_message(message.chat.id, "Вы стали администратором")
+        bot.send_message(message.chat.id, "Вы стали администратором", reply_to_message_id=message.id)
     else:
         bot.send_message(message.chat.id, "Код не найден")
 
@@ -482,6 +519,7 @@ def callback_query(call):
         keyboard.add(types.InlineKeyboardButton("Для ПК", callback_data='instructions@pc'))
         keyboard.add(types.InlineKeyboardButton("Для консоли", callback_data='instructions@console'))
         bot.edit_message_text("Выберите вашу платформу:", reply_markup=keyboard, message_id=call.message.id, chat_id=call.from_user.id)
+    elif splitted[0] == 'getcode': code_key(call.message)
     elif splitted[0] == 'instructions':
         if splitted[1] == 'pc':
             bot.edit_message_text("Инструкции для запуска на ПК: ссылка", message_id=call.message.id, chat_id=call.from_user.id)
