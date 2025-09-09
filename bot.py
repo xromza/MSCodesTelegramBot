@@ -64,7 +64,7 @@ console_handler.setLevel(logging.INFO)
 logger.addHandler(console_handler)
 
 # --- Handler 2: Запись в файл по указанному пути ---
-file_handler = RotatingFileHandler(path_to_log, maxBytes=5 * 1024 * 1024, backupCount=3)
+file_handler = RotatingFileHandler(path_to_log, maxBytes=5 * 1024 * 1024, backupCount=3,  encoding='utf-8')
 file_handler.setFormatter(formatter)
 file_handler.setLevel(logging.DEBUG)
 logger.addHandler(file_handler)
@@ -249,29 +249,26 @@ def menu_handler(message):
         keyboard.add(types.KeyboardButton("👁️ Просмотреть базу данных"))
         keyboard.add(types.KeyboardButton("📁 Выгрузить логи"))
     keyboard.add(types.KeyboardButton("🛟 Инструкции"))
-    #bot.send_message(message.from_user.id, "Функционал пока что не реализован", reply_to_message_id=message.id)
+    bot.send_message(message.from_user.id, "Выберите действие:", reply_markup=keyboard)
 
 @bot.message_handler(func=lambda message: message.text == "🔑 Получить код для входа")
 @anti_spam
 def code_key(message):
-    bot.send_message(message.from_user.id, text="Отправьте _уникальный код_ прямо в чат, и бот ответит вам кодом с почты!", parse_mode='MarkdownV2')
+    bot.send_message(message.from_user.id, text="Отправьте _уникальный код_ прямо в чат, и бот ответит вам кодом с почты", parse_mode='MarkdownV2')
 
 @bot.message_handler(func=lambda message: message.text == "🔄️ Изменить конфиг")
-@anti_spam
 def config_key(message):
     config_handler(message)
 
 @bot.message_handler(func=lambda message: message.text == "👁️ Просмотреть базу данных")
-@anti_spam
 def db_key(message):
     db_inspect_handler(message)
 
 @bot.message_handler(func=lambda message: message.text == "📁 Выгрузить логи")
-@anti_spam
 def logs_key(message):
     logs_handler(message)
 
-@bot.message_handler(func=lambda message: message.text == "📁 Выгрузить логи")
+@bot.message_handler(func=lambda message: message.text == "🛟 Инструкции")
 @anti_spam
 def instructions_key(message):
     keyboard = types.InlineKeyboardMarkup()
@@ -519,7 +516,7 @@ def callback_query(call):
         keyboard.add(types.InlineKeyboardButton("Для ПК", callback_data='instructions@pc'))
         keyboard.add(types.InlineKeyboardButton("Для консоли", callback_data='instructions@console'))
         bot.edit_message_text("Выберите вашу платформу:", reply_markup=keyboard, message_id=call.message.id, chat_id=call.from_user.id)
-    elif splitted[0] == 'getcode': code_key(call.message)
+    elif splitted[0] == 'getcode': bot.send_message(call.from_user.id, text="Отправьте _уникальный код_ прямо в чат, и бот ответит вам кодом с почты", parse_mode='MarkdownV2')
     elif splitted[0] == 'instructions':
         if splitted[1] == 'pc':
             bot.edit_message_text("Инструкции для запуска на ПК: ссылка", message_id=call.message.id, chat_id=call.from_user.id)
