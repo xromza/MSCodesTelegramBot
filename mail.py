@@ -3,6 +3,7 @@ def get_code(username: str, password: str, imap_url) -> str:
     import email
     from email.header import decode_header
     import re
+    from os import path
     
     imap = imaplib.IMAP4_SSL(imap_url) # Выбор IMAP сервера
 
@@ -30,7 +31,8 @@ def get_code(username: str, password: str, imap_url) -> str:
                     if len(element) == 6:
                         try:
                             new_code = element
-                            if new_code != open("last_code.txt").readline().strip():
+
+                            if not path.exists("last_code.txt") or new_code != open("last_code.txt").readline().strip():
                                 with open("last_code.txt", "w") as f:
                                     f.write(str(new_code))
                                 return new_code

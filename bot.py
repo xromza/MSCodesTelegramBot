@@ -214,8 +214,11 @@ def anti_spam(func):
                 last_msg_time = result[0]
 
             # Преобразуем дату из SQLite в timestamp
-            dt = datetime.fromisoformat(str(last_msg_time))
-            last_timestamp = dt.timestamp()
+            try:
+                dt = datetime.fromisoformat(str(last_msg_time))
+                last_timestamp = dt.timestamp()
+            except (ValueError, TypeError):
+                last_timestamp = 0 
 
             # Проверяем анти-спам
             if current_time - last_timestamp < COOLDOWN:
